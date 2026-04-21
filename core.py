@@ -39,25 +39,23 @@ class DecisionTransformer(torch.nn.Module):
 
     def forward(self, states, actions, returns_to_go, horizon_length):
 
-        # batch, horizon_length, state_n
-
         pos_em = self.pos_embedding(torch.arange(0, horizon_length, device = self.device))
         state_em = self.state_embedding(states) + pos_em
         action_em = self.action_embedding(actions) + pos_em
         reward_em   = self.reward_embedding(returns_to_go) + pos_em
 
-        stack_input = torch.stack([state_em, action_em, reward_em], dim=2)   # batch_size, horizon, return+state+action - nembed
-
+        batch_size, horizon_length, n_embed = state_em.shape
+        stack_input = torch.stack([state_em, action_em, reward_em], dim=2).reshape(batch_size, 3*horizon_length, n_embed)   # batch_size, horizon, return+state+action - nembed
         stack_input = self.embed_ln(stack_input)
 
         output = self.attn_head(stack_input)
         output = self.ffn(output)  # batch_size, state, action, return
 
-        output = output.reshape(batch_size, horizon_length, 3, self.n_embed).permute(0, 2, 1, 3)
+        out = output.reshape(batch_size, horizon_length, 3, self.n_embed).permute(0, 2, 1, 3)
 
-        state_preds  = self.predict_state(x[:, 0])
-        action_preds = self.predict_action(x[:, 1])
-        reward_preds = self.predict_reward(x[:, 2])
+        state_preds  = self.predict_state(out[:, 0])
+        action_preds = self.predict_action(out[:, 1])
+        return_preds = self.predict_return(out[:, 2])
 
         return output, state_preds, action_preds, return_preds
 

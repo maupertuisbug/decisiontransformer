@@ -38,11 +38,9 @@ class SingleHead(torch.nn.Module):
 
         aff = q @ k.transpose(-2, -1)
 
-        aff = aff.masked_fill((self.tril[:self.t, :self.t] == 0), value = float(-inf))
+        aff = aff.masked_fill((self.tril[:self.t, :self.t] == 0), value = float('-inf'))
         aff = torch.nn.functional.softmax(aff, dim=-1)
 
         out = aff @ self.value(x)
-
-        out = self.layer(out)
 
         return out
