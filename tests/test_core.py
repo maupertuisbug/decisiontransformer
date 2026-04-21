@@ -1,22 +1,29 @@
 import torch 
-
-
+from core import DecisionTransformer
 
 
 
 class TestCore:
 
 
-    def test_stack(self):
+    def test_forward(self):
 
-        state = torch.tensor(([[1, 2], [1, 2]], [[1, 2], [1, 2]]))
-        action = torch.tensor(([[21, 31], [22,32]], [[23, 33], [24, 34]]))
+        params = {
+                'block_size': 30, 
+                'n_embed' : 512,
+                'state_n' : 17,
+                'action_n' : 8 }
 
-        print(state.shape, action.shape)
-        stack = torch.stack((state, action), dim=1)
-        print(stack)
+        dt = DecisionTransformer(params)
 
-        # assert torch.allclose(stack, torch.tensor([[[ 1,  2, 21, 31],
-        #                         [ 1,  2, 22, 32]],
-        #                         [[ 1,  2, 23, 33],
-        #                         [ 1,  2, 24, 34]]]))
+        states = torch.randn((32, 30, 512, 17)).to('cuda')
+        actions = torch.randn((32, 30, 512, 8)).to('cuda')
+        returns_to_go =  torch.randn((32, 30, 512, 1)).to('cuda')
+
+        output,_, _, _ = dt.forward(states, actions, returns_to_go, 30)
+
+        print(output.shape)
+
+
+
+
