@@ -1,5 +1,6 @@
 import torch 
 from transformer_heads import FeedForward, SingleHead
+from dataset import DatasetGenerator
 params = {
     'block_size': 30, 
     'n_embed' : 512
@@ -35,6 +36,11 @@ class DecisionTransformer(torch.nn.Module):
 
         self.attn_head = SingleHead(self.n_embed, self.n_embed, 3*self.horizon_length).to(self.device)
         self.ffn       = FeedForward(self.n_embed).to(self.device)
+
+        self.optimizer = torch.optim.Adam(self.parameters(), lr = 0.0003)
+
+        self.dg = DatasetGenerator(64, self.horizon_length, 'mujoco/halfcheetah/medium-v0')
+        self.dg.setup_episodes(10)
         
 
     def forward(self, states, actions, returns_to_go, horizon_length):
@@ -58,6 +64,15 @@ class DecisionTransformer(torch.nn.Module):
         return_preds = self.predict_return(out[:, 2])
 
         return output, state_preds, action_preds, return_preds
+
+
+    def learn(self):
+
+        s, a, r, sn, an, rn = self.dg.get_dataset()
+
+        _, _, action_preds, _ = self(s, a, r, 30)
+
+
 
 
 
