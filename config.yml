@@ -12,7 +12,7 @@ parameters:
     values: ['HalfCheetah-v5']
 
   target_return:
-    values: [5000]
+    values: [6000]
   
   batch_size:
     values: [64]

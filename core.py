@@ -62,11 +62,11 @@ class DecisionTransformer(torch.nn.Module):
         reward_em   = self.reward_embedding(returns_to_go) + pos_em
 
         batch_size, horizon_length, n_embed = state_em.shape
-        stack_input = torch.stack([state_em, action_em, reward_em], dim=2).reshape(batch_size, 3*horizon_length, n_embed)   # batch_size, horizon, return+state+action - nembed
-        stack_input = self.embed_ln(stack_input)
+        stack_input = torch.stack([state_em, action_em, reward_em], dim=2)
+        stack_input = stack_input.reshape(batch_size, 3*horizon_length, n_embed)   # batch_size, horizon, return+state+action - nembed
 
         output = self.attn_head(stack_input)
-        output = self.ffn(output)  # batch_size, state, action, return
+        output = self.ffn(output)  # batch_size, horizon, state, action, return
 
         out = output.reshape(batch_size, horizon_length, 3, self.n_embed).permute(0, 2, 1, 3)
 
