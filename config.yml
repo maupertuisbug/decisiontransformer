@@ -1,0 +1,45 @@
+method: grid 
+
+metric:
+  name: return 
+  goal: maximize 
+
+parameters:
+  env_id:
+    values: ['mujoco/halfcheetah/medium-v0']
+  
+  env_name:
+    values: ['HalfCheetah-v5']
+
+  target_return:
+    values: [5000]
+  
+  batch_size:
+    values: [64]
+
+  lr:
+    values: [0.001]
+
+  block_size:
+    values: [20]
+  
+  n_embed:
+    values: [128]
+
+  eval_ep:
+    values: [10]
+
+  seed:
+    values: [67, 89, 103]
+  
+  sampled_eps:
+    values: [100]
+
+  training_epochs:
+    values: [10000]
+  
+  eval_epochs:
+    values: [500]
+  
+
+  

@@ -11,6 +11,8 @@ class FeedForward(torch.nn.Module):
         super().__init__()
         self.net = torch.nn.Sequential(torch.nn.Linear(n_embed, 4*n_embed), 
                          torch.nn.ReLU(),
+                         torch.nn.Linear(4*n_embed, 4*n_embed), 
+                         torch.nn.ReLU(),
                          torch.nn.Linear(4*n_embed, n_embed))
 
     def forward(self, x):

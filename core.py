@@ -5,16 +5,21 @@ import gymnasium as gym
 from tqdm import tqdm
 import numpy as np
 torch.set_default_dtype(torch.float64)
+import os 
+import gc
+os.environ["MUJOCO_GL"] = "egl"
+os.environ["PYOPENGL_PLATFORM"] = "egl"
+
 params = {
     'block_size': 20, 
-    'n_embed' : 512, 
+    'n_embed' : 128, 
     'state_n' : 17,
     'action_n' : 6
 }
 
 class DecisionTransformer(torch.nn.Module):
 
-    def __init__(self, params):
+    def __init__(self, params, batch_size, sampled_ep, lr, dataset_id):
 
         super().__init__()
 
@@ -43,10 +48,10 @@ class DecisionTransformer(torch.nn.Module):
         self.attn_head = SingleHead(self.n_embed, self.n_embed, 3*self.horizon_length).to(self.device)
         self.ffn       = FeedForward(self.n_embed).to(self.device)
 
-        self.optimizer = torch.optim.Adam(self.parameters(), lr = 0.0003)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr = lr)
 
-        self.dg = DatasetGenerator(64, self.horizon_length, 'mujoco/halfcheetah/medium-v0')
-        self.dg.setup_episodes(100)
+        self.dg = DatasetGenerator(batch_size, self.horizon_length, dataset_id)
+        self.dg.setup_episodes(sampled_ep)
         
 
     def forward(self, states, actions, returns_to_go, horizon_length):
@@ -83,7 +88,7 @@ class DecisionTransformer(torch.nn.Module):
         an = an.to(self.device)
         rn = rn.to(self.device)
 
-        _, _, action_preds, _ = self(s, a, r, 20)
+        _, _, action_preds, _ = self(s, a, r, self.horizon_length)
 
         loss_fn = torch.nn.MSELoss()
 
@@ -95,30 +100,29 @@ class DecisionTransformer(torch.nn.Module):
         output.backward()
         self.optimizer.step()
 
-    def eval(self):
+    def eval(self, env_name, n_ep, target_return, seed):
 
-        env = gym.make('HalfCheetah-v5')
+        env = gym.make(env_name)
         rl = []
 
-        for ep in range(0, 10):
-            obs, _ = env.reset()
+        for ep in range(0, n_ep):
+            obs, _ = env.reset(seed)
             action = env.action_space.sample()
             next_obs, reward_ep, _, _, _ = env.step(action)
             states = torch.tensor(obs, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
             actions = torch.tensor(action, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
-            returns = torch.tensor(5000.0, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
-            return_ = 5000.0
+            returns = torch.tensor(target_return, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
+            return_ = target_return
             steps = 0
             while steps < 1000:
 
-                _, _, action_preds, _ = self(states, actions, returns, 20)
+                _, _, action_preds, _ = self(states, actions, returns, self.horizon_length)
                 action = action_preds[:, -1, :].squeeze(0).detach().cpu().numpy()
                 next_obs, reward, _, _, _ = env.step(action)
                 return_ = return_ - reward
 
                 states = (torch.cat([states.squeeze(0), torch.tensor(next_obs, device=self.device, dtype = torch.float64).unsqueeze(0)], dim=0)[1:,:]).unsqueeze(0)
                 actions = (torch.cat([actions.squeeze(0), torch.tensor(action, device=self.device, dtype = torch.float64).unsqueeze(0)], dim=0)[1:,:]).unsqueeze(0)
-                returns = (torch.cat([returns.squeeze(0), torch.tensor(return_, device=self.device, dtype = torch.float64).unsqueeze(0).unsqueeze(0)], dim=0)[1:,:]).unsqueeze(0)
                 returns = (torch.cat([returns.squeeze(0), torch.tensor(return_, device=self.device, dtype = torch.float64).unsqueeze(0).unsqueeze(0)], dim=0)[1:,:]).unsqueeze(0)
 
                 reward_ep = reward_ep + reward
@@ -130,22 +134,6 @@ class DecisionTransformer(torch.nn.Module):
 
 
 
-
-
-
-
-
-
-
-
-dt = DecisionTransformer(params)
-
-for i in tqdm(range(0, 50000)):
-    dt.learn()
-
-    if i%500 == 0:
-        result = dt.eval()
-        print(result)
 
 
 
