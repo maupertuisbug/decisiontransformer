@@ -26,6 +26,17 @@ class TestCore:
         assert action_p.shape == (32, 30, 8)
         assert return_p.shape == (32, 30, 1)
 
+    def test_init_state(self):
+
+        state = torch.tensor([1, 2, 3])
+        state = state.unsqueeze(0)
+
+        states = state.repeat(3,1)
+
+        expected_states = torch.tensor([[1, 2, 3], [1, 2, 3], [1, 2, 3]])
+
+        assert torch.allclose(states, expected_states)
+
 
 
 

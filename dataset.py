@@ -23,7 +23,7 @@ class DatasetGenerator:
 
     def get_dataset(self):
 
-        idx = torch.randint(self.ep_length-self.horizon, (self.batch_size,))
+        idx = torch.randint(self.ep_length-self.horizon-1, (self.batch_size,))
 
         random_episode = random.randint(0, 9)
 
@@ -31,15 +31,15 @@ class DatasetGenerator:
         actions = self.sampled_episodes[random_episode].actions
         rewards = self.sampled_episodes[random_episode].rewards
 
-        data_states = torch.stack([torch.tensor(states[x:x+self.horizon]) for x in idx])
-        data_actions = torch.stack([torch.tensor(actions[x:x+self.horizon]) for x in idx])
-        data_rewards = torch.stack([torch.tensor(rewards[x:x+self.horizon]) for x in idx])
+        data_states = torch.stack([torch.tensor(states[x:x+self.horizon], dtype = torch.float64) for x in idx])
+        data_actions = torch.stack([torch.tensor(actions[x:x+self.horizon], dtype = torch.float64) for x in idx])
+        data_rewards = torch.stack([torch.tensor(rewards[x:x+self.horizon], dtype = torch.float64) for x in idx])
 
         data_rewards = reward_to_return(data_rewards, self.horizon).unsqueeze(-1)
 
-        data_states_next = torch.stack([torch.tensor(states[x+1:x+1+self.horizon]) for x in idx])
-        data_actions_next = torch.stack([torch.tensor(actions[x+1:x+1+self.horizon]) for x in idx])
-        data_rewards_next = torch.stack([torch.tensor(rewards[x+1:x+1+self.horizon]) for x in idx])
+        data_states_next = torch.stack([torch.tensor(states[x+1:x+1+self.horizon], dtype = torch.float64) for x in idx])
+        data_actions_next = torch.stack([torch.tensor(actions[x+1:x+1+self.horizon], dtype = torch.float64) for x in idx])
+        data_rewards_next = torch.stack([torch.tensor(rewards[x+1:x+1+self.horizon], dtype = torch.float64) for x in idx])
 
         data_rewards_next = reward_to_return(data_rewards_next, self.horizon).unsqueeze(-1)
 

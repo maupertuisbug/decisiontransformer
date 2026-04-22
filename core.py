@@ -1,9 +1,15 @@
 import torch 
 from transformer_heads import FeedForward, SingleHead
 from dataset import DatasetGenerator
+import gymnasium as gym
+from tqdm import tqdm
+import numpy as np
+torch.set_default_dtype(torch.float64)
 params = {
     'block_size': 30, 
-    'n_embed' : 512
+    'n_embed' : 512, 
+    'state_n' : 17,
+    'action_n' : 6
 }
 
 class DecisionTransformer(torch.nn.Module):
@@ -70,7 +76,78 @@ class DecisionTransformer(torch.nn.Module):
 
         s, a, r, sn, an, rn = self.dg.get_dataset()
 
+        s = s.to(self.device)
+        a = a.to(self.device)
+        r = r.to(self.device)
+        sn = sn.to(self.device)
+        an = an.to(self.device)
+        rn = rn.to(self.device)
+
         _, _, action_preds, _ = self(s, a, r, 30)
+
+        loss_fn = torch.nn.MSELoss()
+
+        action_actual = an[:, -1, :]
+        action_pred   = action_preds[:, -1, :]
+
+        output = loss_fn(action_actual, action_pred)
+        self.optimizer.zero_grad()
+        output.backward()
+        self.optimizer.step()
+
+    def eval(self):
+
+        env = gym.make('HalfCheetah-v5')
+        rl = []
+
+        for ep in range(0, 10):
+            obs, _ = env.reset()
+            action = env.action_space.sample()
+            next_obs, reward_ep, _, _, _ = env.step(action)
+            states = torch.tensor(obs, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
+            actions = torch.tensor(action, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
+            returns = torch.tensor(500.0, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
+            return_ = 500.0
+            steps = 0
+            while steps < 1000:
+
+                _, _, action_preds, _ = self(states, actions, returns, 30)
+                action = action_preds[:, -1, :].squeeze(0).detach().cpu().numpy()
+                next_obs, reward, _, _, _ = env.step(action)
+                return_ = return_ - reward
+
+                states = (torch.cat([states.squeeze(0), torch.tensor(next_obs, device=self.device, dtype = torch.float64).unsqueeze(0)], dim=0)[1:,:]).unsqueeze(0)
+                actions = (torch.cat([actions.squeeze(0), torch.tensor(action, device=self.device, dtype = torch.float64).unsqueeze(0)], dim=0)[1:,:]).unsqueeze(0)
+                returns = (torch.cat([returns.squeeze(0), torch.tensor(return_, device=self.device, dtype = torch.float64).unsqueeze(0).unsqueeze(0)], dim=0)[1:,:]).unsqueeze(0)
+                returns = (torch.cat([returns.squeeze(0), torch.tensor(return_, device=self.device, dtype = torch.float64).unsqueeze(0).unsqueeze(0)], dim=0)[1:,:]).unsqueeze(0)
+
+                reward_ep = reward_ep + reward
+                steps+=1
+
+            rl.append(reward_ep)
+
+        return np.mean(rl)
+
+
+
+
+
+
+
+
+
+
+
+dt = DecisionTransformer(params)
+
+for i in tqdm(range(0, 10000)):
+    dt.learn()
+
+    if i%500 == 0:
+        result = dt.eval()
+        print(result)
+
+
 
 
 
