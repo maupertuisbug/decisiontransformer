@@ -106,7 +106,7 @@ class DecisionTransformer(torch.nn.Module):
         rl = []
 
         for ep in range(0, n_ep):
-            obs, _ = env.reset(seed)
+            obs, _ = env.reset(seed = seed)
             action = env.action_space.sample()
             next_obs, reward_ep, _, _, _ = env.step(action)
             states = torch.tensor(obs, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)

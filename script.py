@@ -29,7 +29,7 @@ def train():
     target_return = wandb_config.target_return
     sampled_ep = int(wandb_config.sampled_eps)
     
-    env = gym.make('HalfCheetah-v5')
+    env = gym.make(env_name)
 
     state_n = env.observation_space.shape[0]
     action_n = env.action_space.shape[0]
@@ -47,7 +47,7 @@ def train():
         dt.learn()
 
         if i%eval_epochs == 0:
-            re = dt.eval(env_name, 10, target_return, seed)
+            re = dt.eval(env_name, 20, target_return, seed)
             run.log({"episode_reward": re}, step=ev)
             ev+=1
 
