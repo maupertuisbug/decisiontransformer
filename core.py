@@ -6,7 +6,7 @@ from tqdm import tqdm
 import numpy as np
 torch.set_default_dtype(torch.float64)
 params = {
-    'block_size': 30, 
+    'block_size': 20, 
     'n_embed' : 512, 
     'state_n' : 17,
     'action_n' : 6
@@ -46,7 +46,7 @@ class DecisionTransformer(torch.nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(), lr = 0.0003)
 
         self.dg = DatasetGenerator(64, self.horizon_length, 'mujoco/halfcheetah/medium-v0')
-        self.dg.setup_episodes(10)
+        self.dg.setup_episodes(100)
         
 
     def forward(self, states, actions, returns_to_go, horizon_length):
@@ -83,7 +83,7 @@ class DecisionTransformer(torch.nn.Module):
         an = an.to(self.device)
         rn = rn.to(self.device)
 
-        _, _, action_preds, _ = self(s, a, r, 30)
+        _, _, action_preds, _ = self(s, a, r, 20)
 
         loss_fn = torch.nn.MSELoss()
 
@@ -106,12 +106,12 @@ class DecisionTransformer(torch.nn.Module):
             next_obs, reward_ep, _, _, _ = env.step(action)
             states = torch.tensor(obs, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
             actions = torch.tensor(action, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
-            returns = torch.tensor(500.0, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
-            return_ = 500.0
+            returns = torch.tensor(5000.0, device = self.device, dtype = torch.float64).unsqueeze(0).repeat(self.horizon_length, 1).unsqueeze(0)
+            return_ = 5000.0
             steps = 0
             while steps < 1000:
 
-                _, _, action_preds, _ = self(states, actions, returns, 30)
+                _, _, action_preds, _ = self(states, actions, returns, 20)
                 action = action_preds[:, -1, :].squeeze(0).detach().cpu().numpy()
                 next_obs, reward, _, _, _ = env.step(action)
                 return_ = return_ - reward
@@ -140,7 +140,7 @@ class DecisionTransformer(torch.nn.Module):
 
 dt = DecisionTransformer(params)
 
-for i in tqdm(range(0, 10000)):
+for i in tqdm(range(0, 50000)):
     dt.learn()
 
     if i%500 == 0:
