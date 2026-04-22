@@ -1,0 +1,45 @@
+method: grid 
+
+metric:
+  name: return 
+  goal: maximize 
+
+parameters:
+  env_id:
+    values: ['mujoco/hopper/expert-v0', 'mujoco/hopper/medium-v0', 'mujoco/hopper/simple-v0']
+  
+  env_name:
+    values: ['Hopper-v5']
+
+  target_return:
+    values: [3600]
+  
+  batch_size:
+    values: [64]
+
+  lr:
+    values: [0.0001]
+
+  block_size:
+    values: [20]
+  
+  n_embed:
+    values: [128]
+
+  eval_ep:
+    values: [10]
+
+  seed:
+    values: [67, 89, 103]
+  
+  sampled_eps:
+    values: [100]
+
+  training_epochs:
+    values: [100000]
+  
+  eval_epochs:
+    values: [500]
+  
+
+  

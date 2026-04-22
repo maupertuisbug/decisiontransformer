@@ -6,13 +6,13 @@ metric:
 
 parameters:
   env_id:
-    values: ['mujoco/halfcheetah/medium-v0']
+    values: ['mujoco/walker2d/expert-v0', 'mujoco/walker2d/medium-v0', 'mujoco/walker2d/simple-v0']
   
   env_name:
-    values: ['HalfCheetah-v5']
+    values: ['Walker2d-v5']
 
   target_return:
-    values: [6000]
+    values: [5000]
   
   batch_size:
     values: [64]

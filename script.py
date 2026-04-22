@@ -13,7 +13,7 @@ from core import DecisionTransformer
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import cProfile, pstats
-
+import argparse
 
 def train():
     run = wandb.init()
@@ -55,7 +55,10 @@ def train():
     gc.collect()
 
 
-conf = OmegaConf.load('config.yml')
+parser = argparse.ArgumentParser()
+parser.add_argument("--config")
+args = parser.parse_args()
+conf = OmegaConf.load(args.config)
 conf = OmegaConf.to_container(conf)
 sweep_id = wandb.sweep(sweep=conf, project="dt_analysis")
 wandb.agent(sweep_id, function=train)
