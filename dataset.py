@@ -20,12 +20,13 @@ class DatasetGenerator:
 
         self.sampled_episodes = self.dataset.sample_episodes(n_ep)
         self.ep_length = self.sampled_episodes[0].observations.shape[0]
+        self.n_ep = n_ep
 
     def get_dataset(self):
 
-        idx = torch.randint(self.ep_length-self.horizon-1, (self.batch_size,))
-
-        random_episode = random.randint(0, 9)
+        random_episode = random.randint(0, self.n_ep-1)
+        self.ep_length = self.sampled_episodes[random_episode].observations.shape[0]
+        idx = torch.randint(low = 0, high = self.ep_length-self.horizon-1, size = (self.batch_size,))
 
         states = self.sampled_episodes[random_episode].observations
         actions = self.sampled_episodes[random_episode].actions
